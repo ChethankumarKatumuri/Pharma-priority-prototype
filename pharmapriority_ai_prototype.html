@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PharmaPriority AI — Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --navy-900:#0E2A45;
+    --navy-700:#1F4E79;
+    --blue-500:#2E75B6;
+    --blue-100:#DCEAF6;
+    --sky-50:#F4F8FC;
+    --amber-500:#D98E04;
+    --green-600:#1E8A5B;
+    --red-500:#C0392B;
+    --ink-900:#0F1D2B;
+    --ink-500:#5B7286;
+    --line:#D8E3EC;
+    --white:#FFFFFF;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',sans-serif;background:var(--sky-50);color:var(--ink-900);}
+  h1,h2,h3,.brand,.nav-item{font-family:'Manrope',sans-serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  /* ---------- Layout ---------- */
+  .app{display:flex;min-height:100vh;}
+  .sidebar{
+    width:230px;flex-shrink:0;background:var(--navy-900);color:#fff;
+    padding:24px 16px;display:flex;flex-direction:column;gap:4px;
+  }
+  .brand{font-size:18px;font-weight:800;letter-spacing:.2px;padding:0 10px 6px;}
+  .tagline{font-size:11px;color:#9FC0DD;padding:0 10px 22px;letter-spacing:.3px;}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;
+    color:#C9DCEC;font-size:13.5px;font-weight:600;cursor:pointer;border:none;background:none;
+    text-align:left;width:100%;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.06);color:#fff;}
+  .nav-item.active{background:var(--blue-500);color:#fff;}
+  .nav-num{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7FA8CC;width:16px;
+  }
+  .nav-item.active .nav-num{color:#DCEAF6;}
+  .sidebar-foot{margin-top:auto;font-size:10.5px;color:#6E90AF;padding:10px;}
+
+  .main{flex:1;padding:34px 44px;overflow-y:auto;}
+  .screen{display:none;animation:fade .25s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  .eyebrow{color:var(--blue-500);font-size:11.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin:0 0 6px;}
+  h1.page-title{font-size:26px;margin:0 0 4px;color:var(--navy-900);}
+  .subtitle{color:var(--ink-500);font-size:14px;margin:0 0 26px;}
+
+  /* ---------- Cards ---------- */
+  .grid{display:grid;gap:18px;}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-2{grid-template-columns:1.3fr 1fr;}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .card{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px 22px;
+  }
+  .kpi-label{font-size:12px;color:var(--ink-500);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+  .kpi-value{font-size:28px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--navy-900);margin-top:6px;}
+  .kpi-sub{font-size:12px;color:var(--green-600);margin-top:4px;font-weight:600;}
+
+  .section-title{font-size:15px;font-weight:700;color:var(--navy-900);margin:0 0 14px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;color:var(--ink-500);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;padding:9px 10px;border-bottom:2px solid var(--line);}
+  td{padding:11px 10px;border-bottom:1px solid var(--line);}
+  tr:nth-child(even) td{background:var(--sky-50);}
+  .badge{padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:700;}
+  .badge-invest{background:#DFF3EA;color:var(--green-600);}
+  .badge-pilot{background:#FDF1DA;color:var(--amber-500);}
+  .badge-selective{background:var(--blue-100);color:var(--blue-500);}
+  .badge-eval{background:#EFE9F9;color:#6B4EA6;}
+  .badge-defer{background:#FBE4E1;color:var(--red-500);}
+
+  /* buttons */
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:10px;border:none;
+    font-weight:700;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .btn-primary{background:var(--blue-500);color:#fff;}
+  .btn-primary:hover{background:var(--navy-700);}
+  .btn-ghost{background:transparent;color:var(--navy-700);border:1.5px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--blue-500);color:var(--blue-500);}
+
+  /* login screen */
+  .login-wrap{min-height:calc(100vh - 68px);display:flex;align-items:center;justify-content:center;}
+  .login-card{width:420px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:40px 36px;text-align:center;box-shadow:0 20px 50px -25px rgba(14,42,69,.35);}
+  .login-logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--navy-700),var(--blue-500));margin:0 auto 18px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:22px;}
+  .login-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:26px;}
+  .login-stat{background:var(--sky-50);border-radius:10px;padding:12px;}
+  .login-stat .num{font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--navy-700);font-size:18px;}
+  .login-stat .lbl{font-size:11px;color:var(--ink-500);margin-top:2px;}
+
+  /* form */
+  .form-section{margin-bottom:22px;}
+  .form-section h4{font-size:12.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--blue-500);margin:0 0 12px;font-weight:700;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:12.5px;font-weight:600;color:var(--ink-500);}
+  .field input,.field select,.field textarea{
+    padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;font-family:'Inter',sans-serif;color:var(--ink-900);background:#fff;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--blue-500);}
+  .field.full{grid-column:1/-1;}
+
+  /* sliders / evaluation */
+  .crit-row{display:grid;grid-template-columns:200px 1fr 60px 70px;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--line);}
+  .crit-name{font-weight:700;font-size:13.5px;}
+  .crit-weight{font-size:11px;color:var(--ink-500);}
+  input[type=range]{width:100%;accent-color:var(--blue-500);}
+  .crit-score{font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--navy-700);text-align:center;}
+  .crit-contrib{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-500);text-align:right;}
+
+  .score-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;}
+  .gauge-wrap{position:relative;width:190px;height:190px;}
+  .gauge-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .gauge-num .val{font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:700;color:var(--navy-900);}
+  .gauge-num .out-of{font-size:11px;color:var(--ink-500);}
+  .reco-tag{margin-top:6px;padding:8px 18px;border-radius:30px;font-weight:800;font-size:13px;letter-spacing:.3px;}
+
+  /* forecast */
+  .scenario-card{border-radius:12px;padding:16px 18px;border:1.5px solid var(--line);}
+  .scenario-card h4{margin:0 0 6px;font-size:13px;color:var(--ink-500);text-transform:uppercase;letter-spacing:.3px;}
+  .scenario-card .rev{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--navy-900);}
+  .scenario-card .dec{font-size:12.5px;color:var(--ink-500);margin-top:6px;}
+  .scenario-card.best{border-color:var(--green-600);}
+  .scenario-card.worst{border-color:var(--red-500);}
+  .note-box{background:var(--blue-100);border-left:4px solid var(--blue-500);padding:14px 18px;border-radius:8px;font-size:13.5px;color:var(--navy-900);margin-top:18px;}
+
+  .chart-box{height:230px;}
+  .flex-between{display:flex;justify-content:space-between;align-items:center;}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="brand">PharmaPriority <span style="color:var(--blue-500)">AI</span></div>
+    <div class="tagline">Evaluate · Prioritize · Invest with confidence</div>
+
+    <button class="nav-item active" data-screen="login"><span class="nav-num">01</span> Welcome</button>
+    <button class="nav-item" data-screen="dashboard"><span class="nav-num">02</span> Portfolio Dashboard</button>
+    <button class="nav-item" data-screen="addproject"><span class="nav-num">03</span> Add Project</button>
+    <button class="nav-item" data-screen="evaluation"><span class="nav-num">04</span> Project Evaluation</button>
+    <button class="nav-item" data-screen="forecast"><span class="nav-num">05</span> Forecast &amp; Scenarios</button>
+    <button class="nav-item" data-screen="ranking"><span class="nav-num">06</span> Portfolio Ranking</button>
+
+    <div class="sidebar-foot">Prototype build · sample data only</div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- SCREEN 1: LOGIN -->
+    <section class="screen active" id="screen-login">
+      <div class="login-wrap">
+        <div class="login-card">
+          <div class="login-logo">P</div>
+          <h1 style="margin:0 0 4px;font-size:22px;color:var(--navy-900);">PharmaPriority AI</h1>
+          <div style="color:var(--ink-500);font-size:13.5px;margin-bottom:6px;">Evaluate. Prioritize. Invest with confidence.</div>
+          <div style="font-size:13px;color:var(--ink-500);line-height:1.5;">A data-driven platform for evaluating and prioritizing pharmaceutical innovation projects.</div>
+          <div style="display:flex;gap:10px;justify-content:center;margin-top:22px;">
+            <button class="btn btn-primary" onclick="showScreen('dashboard')">Sign In</button>
+            <button class="btn btn-ghost" onclick="showScreen('dashboard')">View Demo</button>
+          </div>
+          <div class="login-stats">
+            <div class="login-stat"><div class="num">12</div><div class="lbl">Active Projects</div></div>
+            <div class="login-stat"><div class="num">4</div><div class="lbl">High-Priority</div></div>
+            <div class="login-stat"><div class="num">$25M</div><div class="lbl">Portfolio Value</div></div>
+            <div class="login-stat"><div class="num">3</div><div class="lbl">Recommended</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: DASHBOARD -->
+    <section class="screen" id="screen-dashboard">
+      <div class="eyebrow">Portfolio Overview</div>
+      <h1 class="page-title">Innovation Portfolio Dashboard</h1>
+      <p class="subtitle">Real-time view of every innovation project under evaluation.</p>
+
+      <div class="grid grid-4" style="margin-bottom:18px;">
+        <div class="card"><div class="kpi-label">Total Projects</div><div class="kpi-value">12</div></div>
+        <div class="card"><div class="kpi-label">High Priority</div><div class="kpi-value">4</div><div class="kpi-sub">▲ Ready to invest</div></div>
+        <div class="card"><div class="kpi-label">Under Review</div><div class="kpi-value">5</div></div>
+        <div class="card"><div class="kpi-label">Deferred</div><div class="kpi-value">3</div></div>
+      </div>
+      <div class="grid grid-4" style="margin-bottom:18px;">
+        <div class="card" style="grid-column:span 2;"><div class="kpi-label">Total Proposed Investment</div><div class="kpi-value">$18M</div></div>
+        <div class="card" style="grid-column:span 2;"><div class="kpi-label">Expected Portfolio Value</div><div class="kpi-value">$52M</div><div class="kpi-sub">2.9x expected return</div></div>
+      </div>
+
+      <div class="grid grid-2" style="margin-bottom:18px;">
+        <div class="card"><div class="section-title">Priority Score by Project</div><div class="chart-box"><canvas id="chartPriority"></canvas></div></div>
+        <div class="card"><div class="section-title">Projects by Therapy Area</div><div class="chart-box"><canvas id="chartTherapy"></canvas></div></div>
+      </div>
+      <div class="grid grid-2">
+        <div class="card"><div class="section-title">Investment vs. Expected Return</div><div class="chart-box"><canvas id="chartInvestReturn"></canvas></div></div>
+        <div class="card"><div class="section-title">Risk Distribution</div><div class="chart-box"><canvas id="chartRisk"></canvas></div></div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: ADD PROJECT -->
+    <section class="screen" id="screen-addproject">
+      <div class="eyebrow">New Entry</div>
+      <h1 class="page-title">Add Innovation Project</h1>
+      <p class="subtitle">Capture project details before running the evaluation.</p>
+
+      <div class="card">
+        <div class="form-section">
+          <h4>Project Information</h4>
+          <div class="form-grid">
+            <div class="field"><label>Project Name</label><input placeholder="e.g. Diabetes XR Formulation"></div>
+            <div class="field"><label>Project ID</label><input placeholder="P06"></div>
+            <div class="field"><label>Innovation Type</label>
+              <select><option>Product innovation</option><option>Digital innovation</option><option>Formulation</option><option>Digital health</option></select>
+            </div>
+            <div class="field"><label>Therapy Area</label>
+              <select><option>Diabetes</option><option>Oncology</option><option>Cardiology</option><option>Dermatology</option><option>Respiratory</option></select>
+            </div>
+            <div class="field full"><label>Project Description</label><textarea rows="2" placeholder="Short summary of the innovation"></textarea></div>
+            <div class="field"><label>Project Owner</label><input placeholder="e.g. R&amp;D Portfolio Manager"></div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>Commercial Information</h4>
+          <div class="form-grid">
+            <div class="field"><label>Estimated Market Size ($M)</label><input type="number" placeholder="40"></div>
+            <div class="field"><label>Expected Market Growth (%)</label><input type="number" placeholder="8"></div>
+            <div class="field"><label>Expected Annual Revenue ($M)</label><input type="number" placeholder="8"></div>
+            <div class="field"><label>Estimated Investment ($M)</label><input type="number" placeholder="1.2"></div>
+            <div class="field"><label>Expected Launch Year</label><input type="number" placeholder="2028"></div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>Strategic Information</h4>
+          <div class="form-grid">
+            <div class="field"><label>Strategic Fit Score (1–10)</label><input type="number" placeholder="9"></div>
+            <div class="field"><label>Competitive Advantage</label><select><option>High</option><option>Medium</option><option>Low</option></select></div>
+            <div class="field full"><label>Customer Need</label><input placeholder="e.g. Unmet adherence support need"></div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>Risk Information</h4>
+          <div class="form-grid">
+            <div class="field"><label>Regulatory Risk</label><select><option>Low</option><option>Medium</option><option>High</option></select></div>
+            <div class="field"><label>Technical Risk</label><select><option>Low</option><option>Medium</option><option>High</option></select></div>
+            <div class="field"><label>Commercial Risk</label><select><option>Low</option><option>Medium</option><option>High</option></select></div>
+            <div class="field"><label>Financial Risk</label><select><option>Low</option><option>Medium</option><option>High</option></select></div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="showScreen('evaluation')">Save and Evaluate</button>
+      </div>
+    </section>
+
+    <!-- SCREEN 4: EVALUATION -->
+    <section class="screen" id="screen-evaluation">
+      <div class="eyebrow">Scorecard</div>
+      <h1 class="page-title">Project Evaluation Scorecard</h1>
+      <p class="subtitle">Diabetes XR Formulation · P01 — move the sliders to see the priority score update live.</p>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="section-title">Weighted Criteria (1–10 scale)</div>
+          <div id="criteriaList"></div>
+        </div>
+
+        <div class="card score-panel">
+          <div class="section-title" style="align-self:flex-start;">Priority Score</div>
+          <div class="gauge-wrap"><canvas id="gaugeChart"></canvas>
+            <div class="gauge-num"><div class="val mono" id="scoreValue">0.0</div><div class="out-of">out of 100</div></div>
+          </div>
+          <div class="reco-tag" id="recoTag">—</div>
+          <div style="font-size:12px;color:var(--ink-500);margin-top:6px;line-height:1.5;">
+            Score = (Market × 25%) + (Financial × 25%) + (Strategic × 20%) + (Feasibility × 15%) + (Risk-adjusted × 15%)
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 5: FORECAST -->
+    <section class="screen" id="screen-forecast">
+      <div class="eyebrow">Scenario Modeling</div>
+      <h1 class="page-title">Adaptive Commercial Forecast</h1>
+      <p class="subtitle">Diabetes XR Formulation · P01 — adjust assumptions to test resilience of the business case.</p>
+
+      <div class="grid grid-2" style="margin-bottom:18px;">
+        <div class="card">
+          <div class="section-title">Assumptions</div>
+          <div class="field" style="margin-bottom:14px;"><label>Market Growth Rate: <span id="lblGrowth" class="mono">8%</span></label><input type="range" id="rGrowth" min="0" max="20" value="8"></div>
+          <div class="field" style="margin-bottom:14px;"><label>Expected Market Share: <span id="lblShare" class="mono">15%</span></label><input type="range" id="rShare" min="1" max="40" value="15"></div>
+          <div class="field" style="margin-bottom:14px;"><label>Product Adoption Rate: <span id="lblAdopt" class="mono">Moderate</span></label><input type="range" id="rAdopt" min="1" max="3" value="2"></div>
+          <div class="field" style="margin-bottom:14px;"><label>Risk Level: <span id="lblRisk" class="mono">Medium</span></label><input type="range" id="rRisk" min="1" max="3" value="2"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">Forecast Range</div>
+          <div class="chart-box"><canvas id="chartForecast"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="scenario-card best"><h4>Best Case</h4><div class="rev">$12M</div><div class="dec">Strong investment case</div></div>
+        <div class="scenario-card"><h4>Base Case</h4><div class="rev">$8M</div><div class="dec">Proceed with pilot</div></div>
+        <div class="scenario-card worst"><h4>Worst Case</h4><div class="rev">$4M</div><div class="dec">Review risks</div></div>
+      </div>
+
+      <div class="note-box">The project remains commercially attractive under the base-case scenario. A phased investment approach is recommended to reduce financial exposure.</div>
+    </section>
+
+    <!-- SCREEN 6: RANKING -->
+    <section class="screen" id="screen-ranking">
+      <div class="eyebrow">Investment Committee View</div>
+      <h1 class="page-title">Portfolio Priority Recommendations</h1>
+      <p class="subtitle">Ranked across all evaluated innovation projects.</p>
+
+      <div class="card">
+        <table>
+          <thead><tr><th>Rank</th><th>Project</th><th>Therapy Area</th><th>Score</th><th>Recommendation</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">1</td><td>Diabetes XR Formulation</td><td>Diabetes</td><td class="mono">88</td><td><span class="badge badge-invest">Invest</span></td></tr>
+            <tr><td class="mono">2</td><td>Oncology Patient-Support Platform</td><td>Oncology</td><td class="mono">84</td><td><span class="badge badge-pilot">Pilot</span></td></tr>
+            <tr><td class="mono">3</td><td>Cardiology Adherence Solution</td><td>Cardiology</td><td class="mono">80</td><td><span class="badge badge-selective">Selective Investment</span></td></tr>
+            <tr><td class="mono">4</td><td>Dermatology Topical Innovation</td><td>Dermatology</td><td class="mono">72</td><td><span class="badge badge-eval">Further Evaluation</span></td></tr>
+            <tr><td class="mono">5</td><td>Respiratory Combination Product</td><td>Respiratory</td><td class="mono">64</td><td><span class="badge badge-defer">Defer</span></td></tr>
+          </tbody>
+        </table>
+        <div class="note-box">Prioritize the Diabetes XR Formulation and Oncology Patient-Support Platform because they demonstrate strong market potential, strategic alignment, expected financial value, and acceptable risk.</div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+// ---------- Navigation ----------
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.screen===name));
+  if(name==='dashboard') setTimeout(renderDashboardCharts, 30);
+  if(name==='forecast') setTimeout(renderForecastChart, 30);
+}
+document.querySelectorAll('.nav-item').forEach(btn=>{
+  btn.addEventListener('click', ()=>showScreen(btn.dataset.screen));
+});
+
+const navy='#1F4E79', blue='#2E75B6', amber='#D98E04', green='#1E8A5B', red='#C0392B', light='#DCEAF6';
+
+// ---------- Dashboard charts ----------
+let chartsRendered=false;
+function renderDashboardCharts(){
+  if(chartsRendered) return; chartsRendered=true;
+  new Chart(document.getElementById('chartPriority'),{
+    type:'bar',
+    data:{labels:['Diabetes XR','Onco Support','Cardio Adherence','Derm Topical','Respiratory'],
+      datasets:[{data:[88,84,80,72,64],backgroundColor:[navy,blue,blue,amber,red],borderRadius:6}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}}
+  });
+  new Chart(document.getElementById('chartTherapy'),{
+    type:'doughnut',
+    data:{labels:['Diabetes','Oncology','Cardiology','Dermatology','Respiratory'],
+      datasets:[{data:[3,3,2,2,2],backgroundColor:[navy,blue,'#5FA8DB',amber,'#8FBFE0']}]},
+    options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}
+  });
+  new Chart(document.getElementById('chartInvestReturn'),{
+    type:'bar',
+    data:{labels:['P01','P02','P03','P04','P05'],
+      datasets:[
+        {label:'Investment ($M)',data:[2.0,1.2,1.0,1.5,3.0],backgroundColor:navy,borderRadius:5},
+        {label:'Expected Revenue ($M)',data:[10,8,7,5,6],backgroundColor:blue,borderRadius:5}
+      ]},
+    options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}},scales:{y:{beginAtZero:true}}}
+  });
+  new Chart(document.getElementById('chartRisk'),{
+    type:'pie',
+    data:{labels:['Low','Medium','High'],datasets:[{data:[5,4,3],backgroundColor:[green,amber,red]}]},
+    options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}
+  });
+}
+
+// ---------- Evaluation scorecard ----------
+const criteria=[
+  {name:'Market Attractiveness',weight:0.25,score:9},
+  {name:'Financial Potential',weight:0.25,score:8},
+  {name:'Strategic Alignment',weight:0.20,score:9},
+  {name:'Feasibility',weight:0.15,score:8},
+  {name:'Risk-Adjusted Value',weight:0.15,score:7}
+];
+const critList=document.getElementById('criteriaList');
+criteria.forEach((c,i)=>{
+  const row=document.createElement('div'); row.className='crit-row';
+  row.innerHTML=`
+    <div><div class="crit-name">${c.name}</div><div class="crit-weight">Weight ${Math.round(c.weight*100)}%</div></div>
+    <input type="range" min="1" max="10" value="${c.score}" data-i="${i}">
+    <div class="crit-score" id="critscore-${i}">${c.score}</div>
+    <div class="crit-contrib" id="critcontrib-${i}">+${(c.score*c.weight*10).toFixed(1)}</div>
+  `;
+  critList.appendChild(row);
+});
+critList.addEventListener('input', e=>{
+  if(e.target.type==='range'){
+    const i=e.target.dataset.i; criteria[i].score=Number(e.target.value);
+    document.getElementById('critscore-'+i).textContent=criteria[i].score;
+    updateScore();
+  }
+});
+
+let gaugeChart;
+function initGauge(){
+  gaugeChart=new Chart(document.getElementById('gaugeChart'),{
+    type:'doughnut',
+    data:{datasets:[{data:[0,100],backgroundColor:[navy,'#E7EEF4'],borderWidth:0,circumference:270,rotation:225,cutout:'78%'}]},
+    options:{plugins:{tooltip:{enabled:false},legend:{display:false}},animation:{duration:400}}
+  });
+}
+function updateScore(){
+  let total=0;
+  criteria.forEach((c,i)=>{
+    const contrib=c.score*c.weight*10;
+    total+=contrib;
+    document.getElementById('critcontrib-'+i).textContent='+'+contrib.toFixed(1);
+  });
+  document.getElementById('scoreValue').textContent=total.toFixed(1);
+  gaugeChart.data.datasets[0].data=[total,100-total];
+  let color=red, label='LOW PRIORITY', bg='#FBE4E1';
+  if(total>=80){color=green; label='HIGH PRIORITY — Recommended for Investment'; bg='#DFF3EA';}
+  else if(total>=65){color=amber; label='MODERATE PRIORITY — Pilot Recommended'; bg='#FDF1DA';}
+  gaugeChart.data.datasets[0].backgroundColor=[color,'#E7EEF4'];
+  gaugeChart.update();
+  const tag=document.getElementById('recoTag');
+  tag.textContent=label; tag.style.background=bg; tag.style.color=color;
+}
+
+// ---------- Forecast ----------
+let forecastChart, forecastRendered=false;
+const rGrowth=document.getElementById('rGrowth'), rShare=document.getElementById('rShare'),
+      rAdopt=document.getElementById('rAdopt'), rRisk=document.getElementById('rRisk');
+const adoptLabels=['Slow','Moderate','Fast'], riskLabels=['Low','Medium','High'];
+
+function computeForecast(){
+  const growth=Number(rGrowth.value), share=Number(rShare.value),
+        adopt=Number(rAdopt.value), risk=Number(rRisk.value);
+  document.getElementById('lblGrowth').textContent=growth+'%';
+  document.getElementById('lblShare').textContent=share+'%';
+  document.getElementById('lblAdopt').textContent=adoptLabels[adopt-1];
+  document.getElementById('lblRisk').textContent=riskLabels[risk-1];
+
+  const base=(share/15)*(1+growth/100)*(adopt/2)*(1-((risk-1)*0.1));
+  const baseRev=+(8*base).toFixed(1);
+  const bestRev=+(baseRev*1.5).toFixed(1);
+  const worstRev=+(baseRev*0.5).toFixed(1);
+  return {bestRev,baseRev,worstRev};
+}
+function renderForecastChart(){
+  const {bestRev,baseRev,worstRev}=computeForecast();
+  if(!forecastRendered){
+    forecastRendered=true;
+    forecastChart=new Chart(document.getElementById('chartForecast'),{
+      type:'bar',
+      data:{labels:['Worst Case','Base Case','Best Case'],
+        datasets:[{data:[worstRev,baseRev,bestRev],backgroundColor:[red,blue,green],borderRadius:6}]},
+      options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,title:{display:true,text:'Revenue Forecast ($M)'}}}}
+    });
+  } else {
+    forecastChart.data.datasets[0].data=[worstRev,baseRev,bestRev];
+    forecastChart.update();
+  }
+  document.querySelectorAll('.scenario-card .rev')[0].textContent='$'+bestRev+'M';
+  document.querySelectorAll('.scenario-card .rev')[1].textContent='$'+baseRev+'M';
+  document.querySelectorAll('.scenario-card .rev')[2].textContent='$'+worstRev+'M';
+}
+[rGrowth,rShare,rAdopt,rRisk].forEach(r=>r.addEventListener('input', renderForecastChart));
+
+// ---------- Init ----------
+initGauge();
+updateScore();
+</script>
+</body>
+</html>
